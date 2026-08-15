@@ -176,7 +176,7 @@ function registerTool(ctx, definition) {
         return harness.registerTool(ctx, harness.defineTool(definition))
       } catch (error) {
         console.warn(`[dsh-system-proxy] defineTool failed for "${definition.name}": ${error.message || String(error)}; retrying with unconstrained parameters`)
-        return harness.registerTool(ctx, harness.defineTool({ ...definition, parameters: {} }))
+        return harness.registerTool(ctx, harness.defineTool({ ...definition, parameters: { type: 'object', properties: {} } }))
       }
     }
     if (ctx && ctx.tools && typeof ctx.tools.register === 'function') {
@@ -214,7 +214,7 @@ export default {
         'PAC/WPAD URL, no_proxy list, detection source (scutil/env/none), ' +
         'and the plugin config overrides in effect. Pure read-only; use it ' +
         'before deciding whether child processes need a proxy.',
-      parameters: {},
+      parameters: { type: 'object', properties: {} },
       output: {
         schema: { type: 'object', additionalProperties: true },
         render(args, value) {
@@ -236,7 +236,7 @@ export default {
         'into child-process environment changes their network egress, so this ' +
         'tool is disabled when allowExportEnv is false in ' +
         '~/.dsh/dsh-system-proxy.json.',
-      parameters: {},
+      parameters: { type: 'object', properties: {} },
       output: {
         schema: { type: 'object', additionalProperties: true },
         render(args, value) {

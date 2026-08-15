@@ -169,7 +169,7 @@ function registerTool(ctx, definition) {
         return harness.registerTool(ctx, harness.defineTool(definition))
       } catch (error) {
         console.warn(`[dsh-secret-redactor] defineTool failed for "${definition.name}": ${error.message || String(error)}; retrying with unconstrained parameters`)
-        return harness.registerTool(ctx, harness.defineTool({ ...definition, parameters: {} }))
+        return harness.registerTool(ctx, harness.defineTool({ ...definition, parameters: { type: 'object', properties: {} } }))
       }
     }
     if (ctx && ctx.tools && typeof ctx.tools.register === 'function') {
@@ -245,7 +245,7 @@ export default {
       name: 'redact_secret_status',
       description:
         'Report dsh-secret-redactor state: enabled flag, rule count, how many environment secrets and SSH passwords are collected (counts only, never values), and the config path. Use it to verify the redactor is active.',
-      parameters: {},
+      parameters: { type: 'object', properties: {} },
       output: {
         schema: { type: 'object', additionalProperties: true },
         render(args, value) {

@@ -269,9 +269,9 @@ function sanitizeNode(schema) {
  * parameter map); any other root degrades to unconstrained `{}`.
  */
 export function sanitizeParameterSchema(schema) {
-  if (!isPlainObject(schema)) return {}
+  if (!isPlainObject(schema)) return { type: 'object', properties: {} }
   const node = sanitizeNode(schema)
-  if (node.type !== 'object') return {}
+  if (node.type !== 'object') return { type: 'object', properties: {} }
   // The DSL parameter root is implicitly open: additionalProperties must be
   // true or omitted (false would be rejected by normalizeParameterSchemaSpec).
   if (Object.hasOwn(node, 'additionalProperties') && node.additionalProperties !== true) delete node.additionalProperties
@@ -300,7 +300,7 @@ function registerModelTool(ctx, definition) {
         // Retry once with an unconstrained schema: a schema keyword the
         // sanitizer missed must not cost the tool its registration.
         console.warn(`[dsh-mcp-client-v2] defineTool failed for "${definition.name}": ${error.message || String(error)}; retrying with unconstrained parameters`)
-        const fallback = { ...definition, parameters: {} }
+        const fallback = { ...definition, parameters: { type: 'object', properties: {} } }
         return harness.registerTool(ctx, harness.defineTool(fallback))
       }
     }
@@ -336,7 +336,7 @@ function buildToolDefinition(mcp, serverConfig, tool) {
   return {
     name: publicToolName(serverConfig.serverName, rawName),
     description: typeof tool.description === 'string' ? tool.description : '',
-    parameters: tool.inputSchema === undefined ? {} : sanitizeParameterSchema(tool.inputSchema),
+    parameters: tool.inputSchema === undefined ? { type: 'object', properties: {} } : sanitizeParameterSchema(tool.inputSchema),
     output: createOutput(rawName),
     async execute(args, exec) {
       return mcp.callTool(rawName, args && typeof args === 'object' ? args : {}, {

@@ -26,7 +26,7 @@ function registerTool(ctx, definition) {
         return harness.registerTool(ctx, harness.defineTool(definition))
       } catch (error) {
         console.warn(`[dsh-memories] defineTool failed for "${definition.name}": ${error.message || String(error)}; retrying with unconstrained parameters`)
-        return harness.registerTool(ctx, harness.defineTool({ ...definition, parameters: {} }))
+        return harness.registerTool(ctx, harness.defineTool({ ...definition, parameters: { type: 'object', properties: {} } }))
       }
     }
     if (ctx && ctx.tools && typeof ctx.tools.register === 'function') {
@@ -56,7 +56,9 @@ function tool(name, description, parameters, execute) {
   return {
     name,
     description,
-    parameters,
+    // Function-calling APIs require an object-rooted parameters schema; the
+    // call sites pass a DSL-style open property map, so wrap it here.
+    parameters: { type: 'object', properties: parameters },
     output: {
       schema: { type: 'object', additionalProperties: true },
       render(args, value) {

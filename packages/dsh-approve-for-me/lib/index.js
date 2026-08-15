@@ -53,7 +53,7 @@ function registerTool(ctx, definition) {
         return harness.registerTool(ctx, harness.defineTool(definition))
       } catch (error) {
         console.warn(`[dsh-approve-for-me] defineTool failed for "${definition.name}": ${error.message || String(error)}; retrying with unconstrained parameters`)
-        return harness.registerTool(ctx, harness.defineTool({ ...definition, parameters: {} }))
+        return harness.registerTool(ctx, harness.defineTool({ ...definition, parameters: { type: 'object', properties: {} } }))
       }
     }
     if (ctx && ctx.tools && typeof ctx.tools.register === 'function') {
@@ -113,7 +113,7 @@ export default {
       name: 'approval_policy_status',
       description:
         'Report the dsh-approve-for-me policy: current mode (off/review/auto), and whether the policy engine is active. Use it before running batches of commands to verify expected auto-approval behavior.',
-      parameters: {},
+      parameters: { type: 'object', properties: {} },
       output: {
         schema: { type: 'object', additionalProperties: true },
         render(args, value) {

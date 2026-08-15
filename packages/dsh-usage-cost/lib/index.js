@@ -281,7 +281,7 @@ function registerTool(ctx, definition) {
         return harness.registerTool(ctx, harness.defineTool(definition))
       } catch (error) {
         console.warn(`[dsh-usage-cost] defineTool failed for "${definition.name}": ${error.message || String(error)}; retrying with unconstrained parameters`)
-        return harness.registerTool(ctx, harness.defineTool({ ...definition, parameters: {} }))
+        return harness.registerTool(ctx, harness.defineTool({ ...definition, parameters: { type: 'object', properties: {} } }))
       }
     }
     if (ctx && ctx.tools && typeof ctx.tools.register === 'function') {
@@ -344,7 +344,7 @@ export default {
       name: 'usage_report',
       description:
         'Report dsh-usage-cost usage: today and current-session token counts and estimated USD cost, per-model breakdown, and configured daily/session budgets with exceeded flags. Read-only, no arguments.',
-      parameters: {},
+      parameters: { type: 'object', properties: {} },
       output: {
         schema: { type: 'object', additionalProperties: true },
         render(args, value) {
