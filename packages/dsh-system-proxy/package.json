@@ -1,0 +1,35 @@
+{
+  "name": "dsh-system-proxy",
+  "version": "0.1.0",
+  "description": "System proxy support for DeepSeek Harness: detects the macOS scutil proxy or HTTP_PROXY/HTTPS_PROXY env proxy, exposes system_proxy_status and proxy_export model tools plus a status RPC. · DSH 系统代理插件：检测 macOS scutil 或环境变量代理，提供 system_proxy_status / proxy_export 工具与状态 RPC。",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": {
+      "default": "./lib/index.js"
+    },
+    "./detect": {
+      "default": "./lib/detect.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "keywords": [
+    "deepseek",
+    "harness",
+    "dsh",
+    "dsh-plugin",
+    "proxy",
+    "system-proxy",
+    "pac",
+    "network"
+  ],
+  "license": "MIT",
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1"
+  }
+}

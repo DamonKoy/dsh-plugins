@@ -1,0 +1,5 @@
+# dsh-system-proxy bundle patch: inserts the system-proxy plugin row.
+# Activate with `dsh plugin --profile web add link:~/dsh-plugins/packages/dsh-system-proxy`
+- insert:
+    - id: system-proxy
+      name: 'dsh-system-proxy'
