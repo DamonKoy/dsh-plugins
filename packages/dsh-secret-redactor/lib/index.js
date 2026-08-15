@@ -49,8 +49,10 @@ const BUILTIN_PATTERNS = [
     re: /\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b/g,
     mask: '***JWT***',
   },
-  // Generic long high-entropy tokens (>= 32 chars of mixed alnum)
-  { re: /\b[A-Za-z0-9_-]{32,}\b/g, mask: '***' },
+  // Generic long mixed-case tokens with digits (>= 40 chars). Deliberately
+  // strict: plain identifiers and tool names must never be masked, so the
+  // bar is mixed case + digits + length 40+ (real API keys/session tokens).
+  { re: /\b(?=[A-Za-z0-9_-]*[a-z])(?=[A-Za-z0-9_-]*[A-Z])(?=[A-Za-z0-9_-]*\d)[A-Za-z0-9_-]{40,}\b/g, mask: '***' },
 ]
 
 const ENV_NAME_RE = /(TOKEN|KEY|SECRET|PASSWORD|PASSWD|CREDENTIAL|AUTH|SIGNING)/i
