@@ -1,0 +1,34 @@
+{
+  "name": "dsh-usage-cost",
+  "version": "0.1.0",
+  "description": "Usage and cost tracking for DeepSeek Harness: accumulates LLM token usage and estimated USD cost from the llm/stream waterfall, settles per-turn deltas into a daily stats file, warns when configured budgets are exceeded, and exposes a usage_report tool plus a usage-cost/status RPC. · DSH 用量与成本统计插件：统计 llm/stream 流式调用的 token 用量与估算费用，按轮次结算到当日统计文件，超出预算阈值时告警。",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": {
+      "default": "./lib/index.js"
+    },
+    "./cost": "./lib/cost.js",
+    "./package.json": "./package.json"
+  },
+  "keywords": [
+    "deepseek",
+    "harness",
+    "dsh",
+    "dsh-plugin",
+    "usage",
+    "cost",
+    "tokens",
+    "budget",
+    "billing"
+  ],
+  "license": "MIT",
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1"
+  }
+}

@@ -1,0 +1,5 @@
+# dsh-usage-cost bundle patch: inserts the usage/cost tracking plugin row.
+# Activate with `dsh plugin --profile web add link:~/dsh-plugins/packages/dsh-usage-cost`
+- insert:
+    - id: usage-cost
+      name: 'dsh-usage-cost'

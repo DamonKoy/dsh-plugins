@@ -1,5 +1,5 @@
 /**
- * dsh-system-proxy — detection logic (pure, unit-testable).
+ * dsh-system-proxy - detection logic (pure, unit-testable).
  *
  * Detection sources:
  *   - macOS: `scutil --proxy` (HTTPEnable/HTTPProxy/HTTPPort,
@@ -31,7 +31,7 @@ const TRUTHY = new Set(['1', 'true', 'yes', 'on'])
  * Build a proxy URL from a host and port. A host that already carries a
  * scheme is returned verbatim (handles overrides like
  * "http://user:pass@proxy:8080"). A port is appended only when it is a
- * plain number. The scheme is always http:// — HTTPS traffic also travels
+ * plain number. The scheme is always http:// - HTTPS traffic also travels
  * through an HTTP proxy via CONNECT, which is what https_proxy means.
  */
 export function formatProxyUrl(host, port) {
