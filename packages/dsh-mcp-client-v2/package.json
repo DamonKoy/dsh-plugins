@@ -18,7 +18,7 @@
   },
   "scripts": {
     "check": "node --check lib/index.js && node --check lib/mcp.js && node --check lib/paginate.js",
-    "test": "node --test test/",
+    "test": "node --test",
     "selfcheck": "npm run check && npm run test"
   },
   "keywords": [
