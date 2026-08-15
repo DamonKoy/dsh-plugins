@@ -4,15 +4,18 @@
  *
  * Masks API keys, bearer tokens, JWTs, private keys and user-configured
  * secrets inside every tool result shown to the model (tools/post-execute
- * waterfall), registers a `redact_text` model tool, and exposes
- * Package-private RPC (`secret-redactor/redact`, `secret-redactor/status`)
- * for client halves and other plugins.
+ * waterfall), registers `redact_text` / `redact_secret_status` model tools,
+ * and exposes Package-private RPC (`secret-redactor/redact`,
+ * `secret-redactor/status`).
+ *
+ * Rule engine lives in ./redact.js (pure, unit-tested).
  *
  * Config file: ~/.dsh/dsh-secret-redactor.json  (optional)
  *   {
  *     "enabled": true,
  *     "mask": "***",
- *     "patterns": ["^custom-\\\\d{8}$"],   // extra regexes (full match)
+ *     "disablePatterns": ["generic-mixed"],   // disable built-in rules by name
+ *     "patterns": ["^custom-\\d{8}$"],        // extra regexes
  *     "extraSecrets": ["literal-secret-1"],
  *     "collectEnv": true,
  *     "collectSshPasswords": true
@@ -21,41 +24,18 @@
 import { readFileSync, existsSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
-import process from 'node:process'
+import {
+  BUILTIN_PATTERNS,
+  buildRules,
+  redactTextWithRules,
+  collectEnvSecrets,
+  collectSshPasswords,
+  PATTERN_NAMES,
+} from './redact.js'
 
 const HOME = homedir()
 const CONFIG_PATH = join(HOME, '.dsh', 'dsh-secret-redactor.json')
 const SSH_CONFIG_PATH = join(HOME, '.dsh', 'dsh-ssh.json')
-
-// Default shapes — every built-in pattern is applied as a global regex.
-const BUILTIN_PATTERNS = [
-  // OpenAI / DeepSeek style API keys
-  { re: /sk-[A-Za-z0-9_-]{12,}/g, mask: 'sk-***' },
-  // GitHub tokens (pat/oauth/user/server/refresh)
-  { re: /gh[pousr]_[A-Za-z0-9]{20,}/g, mask: 'gh***' },
-  // AWS access key id
-  { re: /AKIA[0-9A-Z]{16}/g, mask: 'AKIA***' },
-  // Slack tokens
-  { re: /xox[baprs]-[A-Za-z0-9-]{10,}/g, mask: 'xox***' },
-  // PEM private key blocks
-  {
-    re: /-----BEGIN(?:[A-Z ]*)PRIVATE KEY-----\n[\s\S]*?-----END(?:[A-Z ]*)PRIVATE KEY-----/g,
-    mask: '***PRIVATE KEY BLOCK***',
-  },
-  // Authorization bearer headers
-  { re: /\bBearer\s+[A-Za-z0-9._~+/=-]{20,}/gi, mask: 'Bearer ***' },
-  // JWTs (header.payload.signature)
-  {
-    re: /\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b/g,
-    mask: '***JWT***',
-  },
-  // Generic long mixed-case tokens with digits (>= 40 chars). Deliberately
-  // strict: plain identifiers and tool names must never be masked, so the
-  // bar is mixed case + digits + length 40+ (real API keys/session tokens).
-  { re: /\b(?=[A-Za-z0-9_-]*[a-z])(?=[A-Za-z0-9_-]*[A-Z])(?=[A-Za-z0-9_-]*\d)[A-Za-z0-9_-]{40,}\b/g, mask: '***' },
-]
-
-const ENV_NAME_RE = /(TOKEN|KEY|SECRET|PASSWORD|PASSWD|CREDENTIAL|AUTH|SIGNING)/i
 
 function loadConfig() {
   try {
@@ -68,73 +48,8 @@ function loadConfig() {
   return {}
 }
 
-function collectEnvSecrets() {
-  const out = new Set()
-  for (const [name, val] of Object.entries(process.env)) {
-    if (!val || val.length < 8) continue
-    if (ENV_NAME_RE.test(name)) out.add(val)
-  }
-  return out
-}
-
-function collectSshPasswords() {
-  const out = new Set()
-  try {
-    if (existsSync(SSH_CONFIG_PATH)) {
-      const data = JSON.parse(readFileSync(SSH_CONFIG_PATH, 'utf8'))
-      const hosts = Array.isArray(data) ? data : data.hosts
-      if (Array.isArray(hosts)) {
-        for (const h of hosts) {
-          if (h && typeof h.password === 'string' && h.password.length >= 6) out.add(h.password)
-        }
-      }
-    }
-  } catch {
-    /* config not present or unreadable: nothing to collect */
-  }
-  return out
-}
-
-function buildRules() {
-  const cfg = loadConfig()
-  const rules = []
-  const mask = typeof cfg.mask === 'string' ? cfg.mask : '***'
-  for (const p of BUILTIN_PATTERNS) rules.push({ re: p.re, mask: p.mask })
-  if (cfg.collectEnv !== false) {
-    for (const s of collectEnvSecrets()) {
-      rules.push({ re: new RegExp(escapeRegExp(s), 'g'), mask })
-    }
-  }
-  if (cfg.collectSshPasswords !== false) {
-    for (const s of collectSshPasswords()) {
-      rules.push({ re: new RegExp(escapeRegExp(s), 'g'), mask })
-    }
-  }
-  if (Array.isArray(cfg.patterns)) {
-    for (const p of cfg.patterns) {
-      try {
-        rules.push({ re: new RegExp(p, 'g'), mask })
-      } catch {
-        /* skip invalid user regex */
-      }
-    }
-  }
-  if (Array.isArray(cfg.extraSecrets)) {
-    for (const s of cfg.extraSecrets) {
-      if (typeof s === 'string' && s.length >= 4) rules.push({ re: new RegExp(escapeRegExp(s), 'g'), mask })
-    }
-  }
-  return rules
-}
-
-function escapeRegExp(s) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-}
-
 function redactText(text) {
-  let out = String(text)
-  for (const rule of buildRules()) out = out.replace(rule.re, rule.mask)
-  return out
+  return redactTextWithRules(text, buildRules(loadConfig(), { sshConfigPath: SSH_CONFIG_PATH }))
 }
 
 function redactValue(value, depth = 0) {
@@ -151,12 +66,17 @@ function redactValue(value, depth = 0) {
 
 function status() {
   const cfg = loadConfig()
+  const rules = buildRules(cfg, { sshConfigPath: SSH_CONFIG_PATH })
+  const disabled = Array.isArray(cfg.disablePatterns) ? cfg.disablePatterns : []
   return {
     enabled: cfg.enabled !== false,
     configPath: CONFIG_PATH,
-    ruleCount: buildRules().length,
+    builtinRuleCount: BUILTIN_PATTERNS.length,
+    activeRuleCount: rules.length,
+    activeBuiltinRules: PATTERN_NAMES.filter((n) => !disabled.includes(n)),
+    disabledBuiltinRules: disabled.filter((n) => PATTERN_NAMES.includes(n)),
     collectedEnvSecrets: collectEnvSecrets().size,
-    collectedSshPasswords: collectSshPasswords().size,
+    collectedSshPasswords: collectSshPasswords(SSH_CONFIG_PATH).size,
     mask: typeof cfg.mask === 'string' ? cfg.mask : '***',
   }
 }
@@ -227,7 +147,7 @@ export default {
     registerTool(ctx, {
       name: 'redact_text',
       description:
-        'Mask sensitive strings (API keys, bearer tokens, JWTs, private keys, configured secrets) in text or any JSON value before it is logged or shown. Use it before persisting, sharing, or echoing data that may contain credentials.',
+        'Mask sensitive strings (API keys, bearer tokens, JWTs, private keys, connection-string passwords, configured secrets) in text or any JSON value before it is logged or shown. Use it before persisting, sharing, or echoing data that may contain credentials.',
       parameters: {
         value: { type: 'json', description: 'Text or JSON value to redact' },
       },
@@ -246,7 +166,7 @@ export default {
     registerTool(ctx, {
       name: 'redact_secret_status',
       description:
-        'Report dsh-secret-redactor state: enabled flag, rule count, how many environment secrets and SSH passwords are collected (counts only, never values), and the config path. Use it to verify the redactor is active.',
+        'Report dsh-secret-redactor state: enabled flag, built-in rule count, active/disabled rule names, how many environment secrets and SSH passwords are collected (counts only, never values), and the config path. Use it to verify the redactor is active.',
       parameters: { type: 'object', properties: {} },
       output: {
         schema: { type: 'object', additionalProperties: true },
