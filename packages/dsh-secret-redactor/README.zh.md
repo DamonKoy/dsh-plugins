@@ -15,13 +15,13 @@ DeepSeek Harness 敏感信息脱敏插件。对标 Codex 0.147 的「命令展�
 - **`redact_text` 模型工具**：在记录、持久化或回显之前，对任意文本/JSON 脱敏。
 - **`redact_secret_status` 模型工具**：报告规则数与已收集密钥数（只报数量，不报值），
   用于确认脱敏器已生效。
-- **包私有 RPC**（`harness.handle`）：`secret-redactor/redact` 与
+- **包私有 RPC**（`harness.handle`，仅沙箱 realm；CLI 静态加载下跳过）：`secret-redactor/redact` 与
   `secret-redactor/status`，供 client 半区与其他插件调用。
 
 ## 安装
 
 ```sh
-dsh plugin --profile web add link:~/dsh-plugins/packages/dsh-secret-redactor
+dsh plugin --profile web add github:DamonKoy/dsh-plugins#path:/packages/dsh-secret-redactor
 ```
 
 重启 `dsh web`。脱敏默认开启。

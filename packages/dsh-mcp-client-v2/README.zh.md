@@ -31,7 +31,7 @@ DeepSeek Harness 的增强版 MCP 客户端，对标 Codex 0.147 的 MCP 2026-07
 ## 安装
 
 ```sh
-dsh plugin --profile web add link:~/dsh-plugins/packages/dsh-mcp-client-v2
+dsh plugin --profile web add github:DamonKoy/dsh-plugins#path:/packages/dsh-mcp-client-v2
 ```
 
 重启 `dsh web`。与官方 v1（每个服务器一个 Cordis 行）不同，v2 从一个配置文件读取

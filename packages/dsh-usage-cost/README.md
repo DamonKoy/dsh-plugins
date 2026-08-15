@@ -30,7 +30,7 @@ English | [中文](README.zh.md)
 ## Install
 
 ```sh
-dsh plugin --profile web add link:~/dsh-plugins/packages/dsh-usage-cost
+dsh plugin --profile web add github:DamonKoy/dsh-plugins#path:/packages/dsh-usage-cost
 ```
 
 Restart `dsh web`. Active by default, records usage with no config.

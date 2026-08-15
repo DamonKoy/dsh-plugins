@@ -18,13 +18,13 @@ DeepSeek Harness 系统代理插件。对标 Codex 0.143 的 PAC/WPAD 系统代�
   检测来源（`scutil` / `env` / `none`）与 `no_proxy` 列表。
 - **`proxy_export` 模型工具**：返回一段可直接粘贴到 bash 的
   `export http_proxy=... https_proxy=... no_proxy=...` 命令，让子进程走代理。
-- **包私有 RPC**（`harness.handle`）：`system-proxy/status`，供 client 半区
+- **包私有 RPC**（`harness.handle`，仅沙箱 realm；CLI 静态加载下跳过）：`system-proxy/status`，供 client 半区
   与其他插件调用——载荷与 `system_proxy_status` 相同。
 
 ## 安装
 
 ```sh
-dsh plugin --profile web add link:~/dsh-plugins/packages/dsh-system-proxy
+dsh plugin --profile web add github:DamonKoy/dsh-plugins#path:/packages/dsh-system-proxy
 ```
 
 重启 `dsh web`。

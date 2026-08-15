@@ -42,7 +42,7 @@ English | [中文](README.zh.md)
 ## Install
 
 ```sh
-dsh plugin --profile web add link:~/dsh-plugins/packages/dsh-mcp-client-v2
+dsh plugin --profile web add github:DamonKoy/dsh-plugins#path:/packages/dsh-mcp-client-v2
 ```
 
 Restart `dsh web`. Unlike the official v1 client (one Cordis row per server),

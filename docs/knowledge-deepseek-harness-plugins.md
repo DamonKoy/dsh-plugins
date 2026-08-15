@@ -1,8 +1,8 @@
 # 知识沉淀：DSH 插件开发与自主 GitHub 提交实战
 
 > 项目：DeepSeek Harness 插件（dsh-plugins）
-> 周期：2026-08-16 单次会话
-> 产物：6 个插件包、1 个 GitHub 仓库、2 个登记 PR、32 项单测
+> 周期：2026-08-16 单次会话；同日修复静态包 realm 启动崩溃（P15）
+> 产物：6 个插件包、1 个 GitHub 仓库、2 个登记 PR、32 项单测；5 个静态插件改为防御式注册
 > 本文档记录本次"从需求到发布"全过程中的提交信息、痛点、解决方案与可复用经验。
 
 ---
@@ -113,6 +113,25 @@
 - 解决：主代理对每个子代理产物做 `git ls-files`/`ls` 核对，发现后补 `cp` + chore commit。
 - 沉淀：**子代理的最终报告是声明，仓库状态才是事实**；收尾清单逐一核对（LICENSE/README 三件套/测试全绿）。
 
+**P15. 静态包裸引用全局 harness → 启动即崩（AggregateError: harness is not defined）**
+- 现象：dsh web 启动报 `AggregateError: loader entries failed to apply`，errors 数组里 5 个 link
+  插件（secret-redactor / approve-for-me / memories / system-proxy / usage-cost）全部
+  `ReferenceError: harness is not defined`，发生在 apply 阶段 `harness.registerTool(...)`。
+  之前的 `duplicate loader entry id: plugin-toggle` 是另一个插件 bundle patch 与手写 insert 撞 id，属不同问题。
+- 根因：`harness` 是**动态插件 sandbox**（cordis_define / cordis_run）注入的全局，静态包经 CLI
+  （`npx dsh web`）加载时**不存在**。按第四节旧契约把动态 API 照搬进静态包，5 个插件全崩。
+  且 dsh 对 apply 抛异常是**硬失败**（loader 把多个失败聚成 AggregateError 直接退出），
+  不像 pending/未激活那样可容忍。错误详情藏在 AggregateError 的 `errors` 数组里，
+  Node 默认只打印头部，需抓完整输出（后台跑 + 读文件）才能看到真正失败的条目。
+- 解决：静态包改 `export default { name, inject: ['tools'], apply(ctx) }`，
+  用 `ctx.tools.register(definition)`（官方 dsh-mcp-client / dsh-tool-jobs 同款）。
+  保留 harness 优先分支必须 `typeof harness !== 'undefined'` 防御（对未声明变量安全，不抛 ReferenceError）；
+  RPC 无 host-realm 等价物，harness 不存在时跳过。registerTool 整个包 try/catch，
+  注册失败降级 warn，保证 apply **永不抛错**（哪怕 schema 校验失败也只会少一个 tool，不会崩插件树）。
+- 沉淀：**写静态插件前先确认 realm**——动态沙箱用 `harness.*`，静态包用 `ctx.tools` + `inject`；
+  不声明 `inject: ['tools']` 时 `ctx.tools` 抛 "cannot get property tools without inject"（也崩）；
+  apply 必须 try/catch 兜底；`typeof harness` 是检测沙箱注入的标准姿势（参考 mcp-client-v2 registerModelTool）。
+
 ### D. 发布与登记
 
 **P12. JSON 追加拼接错误**
@@ -143,16 +162,37 @@
   llm/stream          (options, next)       -> AsyncIterable<StreamChunk>（先 await next()）
   agent/turn-stopping (payload)             -> void（结算时机）
 
-模型工具注册（动态插件）:
-  harness.registerTool(ctx, harness.defineTool({
-    name, description,
-    parameters: { k: {type:'string', description} },     // DSL；json 类型可用
-    output: { schema: {...}, render: (args, value) => [{type:'text', text: JSON.stringify(value,null,2)}] },
-    async execute(args, exec) { return <JsonValue> }
-  }))
-  // 静态包额外可回退 ctx.tools.register(definition)（官方 mcp-client 路径）
+模型工具注册（分 realm，差异极关键，见 P15）:
+  ① 动态插件（cordis_define / cordis_run 沙箱）：环境注入全局 harness
+     harness.registerTool(ctx, harness.defineTool({
+       name, description,
+       parameters: { k: {type:'string', description} },     // DSL；json 类型可用
+       output: { schema: {...}, render: (args, value) => [{type:'text', text: JSON.stringify(value,null,2)}] },
+       async execute(args, exec) { return <JsonValue> }
+     }))
+     包内 RPC: harness.handle('ns/method', (args) => <JsonValue>)   // Client 用 host.call 调用
+  ② 静态包插件（link 安装、CLI 启动加载）：全局 harness 不存在！
+     export default {
+       name: 'my-plugin',
+       inject: ['tools'],                 // 必须声明，否则 ctx.tools 抛 "cannot get property tools without inject"
+       apply(ctx) {
+         ctx.tools.register(definition)   // 官方 dsh-mcp-client / dsh-tool-jobs 路径；返回 disposer
+       },
+     }
+     RPC 无 host-realm 等价物 → 静态包防御式跳过（typeof harness 检查）
 
-包内 RPC: harness.handle('ns/method', (args) => <JsonValue>)   // Client 用 host.call 调用
+静态包安全写法（两 realm 兼容）:
+  function registerTool(ctx, definition) {
+    try {
+      if (typeof harness !== 'undefined' && harness && typeof harness.defineTool === 'function' && typeof harness.registerTool === 'function') {
+        return harness.registerTool(ctx, harness.defineTool(definition))
+      }
+      if (ctx && ctx.tools && typeof ctx.tools.register === 'function') return ctx.tools.register(definition)
+    } catch (e) { console.warn('tool registration failed:', e.message) }
+    return () => {}
+  }
+  参考实现: packages/dsh-mcp-client-v2/lib/index.js registerModelTool（含 schema 失败重试）
+```
 
 服务/事件目录: cordis_inspect_list → cordis_inspect_query（契约精读用 SDK .d.ts）
 ```

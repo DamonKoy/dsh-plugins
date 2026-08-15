@@ -159,7 +159,45 @@ function status() {
   }
 }
 
+// Register a model tool: prefer the harness.defineTool / harness.registerTool
+// pair (sandbox / link-package realm) and fall back to the host-realm
+// ctx.tools.register API used by official plugins. Never throws from apply.
+function registerTool(ctx, definition) {
+  try {
+    if (typeof harness !== 'undefined' && harness && typeof harness.defineTool === 'function' && typeof harness.registerTool === 'function') {
+      try {
+        return harness.registerTool(ctx, harness.defineTool(definition))
+      } catch (error) {
+        console.warn(`[dsh-secret-redactor] defineTool failed for "${definition.name}": ${error.message || String(error)}; retrying with unconstrained parameters`)
+        return harness.registerTool(ctx, harness.defineTool({ ...definition, parameters: {} }))
+      }
+    }
+    if (ctx && ctx.tools && typeof ctx.tools.register === 'function') {
+      return ctx.tools.register(definition)
+    }
+    console.warn(`[dsh-secret-redactor] no tool registration API available; tool "${definition.name}" not registered`)
+  } catch (error) {
+    console.warn(`[dsh-secret-redactor] tool registration failed for "${definition.name}": ${error.message || String(error)}`)
+  }
+  return () => {}
+}
+
+// Package-private RPC is only available in the sandbox / link-package realm;
+// in the host realm there is no harness, so registration is skipped.
+function registerRpc(path, handler) {
+  if (typeof harness !== 'undefined' && harness && typeof harness.handle === 'function') {
+    try {
+      return harness.handle(path, handler)
+    } catch (error) {
+      console.warn(`[dsh-secret-redactor] RPC registration failed for "${path}": ${error.message || String(error)}`)
+    }
+  }
+  return undefined
+}
+
 export default {
+  name: 'secret-redactor',
+  inject: ['tools'],
   apply(ctx) {
     // Redact model-facing content of every tool result.
     ctx.on('tools/post-execute', async (exec, result, next) => {
@@ -184,7 +222,7 @@ export default {
     })
 
     // Model tool: mask arbitrary text/JSON before it is logged or shown.
-    harness.registerTool(ctx, harness.defineTool({
+    registerTool(ctx, {
       name: 'redact_text',
       description:
         'Mask sensitive strings (API keys, bearer tokens, JWTs, private keys, configured secrets) in text or any JSON value before it is logged or shown. Use it before persisting, sharing, or echoing data that may contain credentials.',
@@ -200,10 +238,10 @@ export default {
       async execute(args) {
         return { value: redactValue(args.value) }
       },
-    }))
+    })
 
     // Model tool: report redactor state without leaking the secrets themselves.
-    harness.registerTool(ctx, harness.defineTool({
+    registerTool(ctx, {
       name: 'redact_secret_status',
       description:
         'Report dsh-secret-redactor state: enabled flag, rule count, how many environment secrets and SSH passwords are collected (counts only, never values), and the config path. Use it to verify the redactor is active.',
@@ -217,10 +255,10 @@ export default {
       async execute() {
         return status()
       },
-    }))
+    })
 
     // Package-private RPC for client halves and other plugins.
-    harness.handle('secret-redactor/redact', (args) => ({ value: redactValue(args && args.value) }))
-    harness.handle('secret-redactor/status', () => status())
+    registerRpc('secret-redactor/redact', (args) => ({ value: redactValue(args && args.value) }))
+    registerRpc('secret-redactor/status', () => status())
   },
 }

@@ -271,7 +271,45 @@ function status() {
   }
 }
 
+// Register a model tool: prefer the harness.defineTool / harness.registerTool
+// pair (sandbox / link-package realm) and fall back to the host-realm
+// ctx.tools.register API used by official plugins. Never throws from apply.
+function registerTool(ctx, definition) {
+  try {
+    if (typeof harness !== 'undefined' && harness && typeof harness.defineTool === 'function' && typeof harness.registerTool === 'function') {
+      try {
+        return harness.registerTool(ctx, harness.defineTool(definition))
+      } catch (error) {
+        console.warn(`[dsh-usage-cost] defineTool failed for "${definition.name}": ${error.message || String(error)}; retrying with unconstrained parameters`)
+        return harness.registerTool(ctx, harness.defineTool({ ...definition, parameters: {} }))
+      }
+    }
+    if (ctx && ctx.tools && typeof ctx.tools.register === 'function') {
+      return ctx.tools.register(definition)
+    }
+    console.warn(`[dsh-usage-cost] no tool registration API available; tool "${definition.name}" not registered`)
+  } catch (error) {
+    console.warn(`[dsh-usage-cost] tool registration failed for "${definition.name}": ${error.message || String(error)}`)
+  }
+  return () => {}
+}
+
+// Package-private RPC is only available in the sandbox / link-package realm;
+// in the host realm there is no harness, so registration is skipped.
+function registerRpc(path, handler) {
+  if (typeof harness !== 'undefined' && harness && typeof harness.handle === 'function') {
+    try {
+      return harness.handle(path, handler)
+    } catch (error) {
+      console.warn(`[dsh-usage-cost] RPC registration failed for "${path}": ${error.message || String(error)}`)
+    }
+  }
+  return undefined
+}
+
 export default {
+  name: 'usage-cost',
+  inject: ['tools'],
   apply(ctx) {
     // Accumulate usage from the llm/stream waterfall. `next()` returns the
     // downstream AsyncIterable; awaiting it is a safe no-op that also covers
@@ -302,7 +340,7 @@ export default {
     })
 
     // Model tool: report current usage and budget state.
-    harness.registerTool(ctx, harness.defineTool({
+    registerTool(ctx, {
       name: 'usage_report',
       description:
         'Report dsh-usage-cost usage: today and current-session token counts and estimated USD cost, per-model breakdown, and configured daily/session budgets with exceeded flags. Read-only, no arguments.',
@@ -316,9 +354,9 @@ export default {
       async execute() {
         return status()
       },
-    }))
+    })
 
     // Package-private RPC for client halves and other plugins.
-    harness.handle('usage-cost/status', () => status())
+    registerRpc('usage-cost/status', () => status())
   },
 }

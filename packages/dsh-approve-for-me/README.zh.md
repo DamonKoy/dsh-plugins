@@ -27,7 +27,7 @@ DeepSeek Harness 自动审批审核插件。对标 Codex 0.147 的 `--approve-fo
 ## 安装
 
 ```sh
-dsh plugin --profile web add link:~/dsh-plugins/packages/dsh-approve-for-me
+dsh plugin --profile web add github:DamonKoy/dsh-plugins#path:/packages/dsh-approve-for-me
 ```
 
 重启 `dsh web`。默认 `review` 模式。

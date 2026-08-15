@@ -21,13 +21,14 @@ English | [中文](README.zh.md)
 - **`proxy_export` model tool**: returns a bash snippet
   (`export http_proxy=... https_proxy=... no_proxy=...`) the model can paste
   into a terminal command so child processes use the proxy.
-- **Package-private RPC** (`harness.handle`): `system-proxy/status` for client
-  halves and other plugins — same payload as `system_proxy_status`.
+- **Package-private RPC** (`harness.handle`, sandbox realm only; skipped when
+  loaded via CLI): `system-proxy/status` for client halves and other plugins —
+  same payload as `system_proxy_status`.
 
 ## Install
 
 ```sh
-dsh plugin --profile web add link:~/dsh-plugins/packages/dsh-system-proxy
+dsh plugin --profile web add github:DamonKoy/dsh-plugins#path:/packages/dsh-system-proxy
 ```
 
 Restart `dsh web`.

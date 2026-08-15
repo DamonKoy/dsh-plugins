@@ -30,7 +30,7 @@ English | [中文](README.zh.md)
 ## Install
 
 ```sh
-dsh plugin --profile web add link:~/dsh-plugins/packages/dsh-approve-for-me
+dsh plugin --profile web add github:DamonKoy/dsh-plugins#path:/packages/dsh-approve-for-me
 ```
 
 Restart `dsh web`. Default mode is `review`.

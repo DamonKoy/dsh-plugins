@@ -166,10 +166,48 @@ async function proxyExport() {
   }
 }
 
+// Register a model tool: prefer the harness.defineTool / harness.registerTool
+// pair (sandbox / link-package realm) and fall back to the host-realm
+// ctx.tools.register API used by official plugins. Never throws from apply.
+function registerTool(ctx, definition) {
+  try {
+    if (typeof harness !== 'undefined' && harness && typeof harness.defineTool === 'function' && typeof harness.registerTool === 'function') {
+      try {
+        return harness.registerTool(ctx, harness.defineTool(definition))
+      } catch (error) {
+        console.warn(`[dsh-system-proxy] defineTool failed for "${definition.name}": ${error.message || String(error)}; retrying with unconstrained parameters`)
+        return harness.registerTool(ctx, harness.defineTool({ ...definition, parameters: {} }))
+      }
+    }
+    if (ctx && ctx.tools && typeof ctx.tools.register === 'function') {
+      return ctx.tools.register(definition)
+    }
+    console.warn(`[dsh-system-proxy] no tool registration API available; tool "${definition.name}" not registered`)
+  } catch (error) {
+    console.warn(`[dsh-system-proxy] tool registration failed for "${definition.name}": ${error.message || String(error)}`)
+  }
+  return () => {}
+}
+
+// Package-private RPC is only available in the sandbox / link-package realm;
+// in the host realm there is no harness, so registration is skipped.
+function registerRpc(path, handler) {
+  if (typeof harness !== 'undefined' && harness && typeof harness.handle === 'function') {
+    try {
+      return harness.handle(path, handler)
+    } catch (error) {
+      console.warn(`[dsh-system-proxy] RPC registration failed for "${path}": ${error.message || String(error)}`)
+    }
+  }
+  return undefined
+}
+
 export default {
+  name: 'system-proxy',
+  inject: ['tools'],
   apply(ctx) {
     // Model tool: read-only system proxy status (detection + overrides).
-    harness.registerTool(ctx, harness.defineTool({
+    registerTool(ctx, {
       name: 'system_proxy_status',
       description:
         'Report the system proxy configuration: detected HTTP/HTTPS proxy, ' +
@@ -186,10 +224,10 @@ export default {
       async execute() {
         return buildStatus()
       },
-    }))
+    })
 
     // Model tool: bash export snippet so child processes use the proxy.
-    harness.registerTool(ctx, harness.defineTool({
+    registerTool(ctx, {
       name: 'proxy_export',
       description:
         'Return a bash export snippet (http_proxy / https_proxy / no_proxy) ' +
@@ -208,9 +246,9 @@ export default {
       async execute() {
         return proxyExport()
       },
-    }))
+    })
 
     // Package-private RPC for client halves and other plugins.
-    harness.handle('system-proxy/status', async () => buildStatus())
+    registerRpc('system-proxy/status', async () => buildStatus())
   },
 }

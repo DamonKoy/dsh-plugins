@@ -23,7 +23,7 @@ DeepSeek Harness 项目记忆系统。对标 Codex 0.145/0.146 的 memories（�
 ## 安装
 
 ```sh
-dsh plugin --profile web add link:~/dsh-plugins/packages/dsh-memories
+dsh plugin --profile web add github:DamonKoy/dsh-plugins#path:/packages/dsh-memories
 ```
 
 重启 `dsh web`。

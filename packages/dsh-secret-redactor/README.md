@@ -21,13 +21,14 @@ English | [中文](README.zh.md)
   logged, persisted, or echoed.
 - **`redact_secret_status` model tool**: report rule count and collected
   secret counts (never the values) to verify the redactor is active.
-- **Package-private RPC** (`harness.handle`): `secret-redactor/redact` and
-  `secret-redactor/status` for client halves and other plugins.
+- **Package-private RPC** (`harness.handle`, sandbox realm only; skipped when
+  loaded via CLI): `secret-redactor/redact` and `secret-redactor/status` for
+  client halves and other plugins.
 
 ## Install
 
 ```sh
-dsh plugin --profile web add link:~/dsh-plugins/packages/dsh-secret-redactor
+dsh plugin --profile web add github:DamonKoy/dsh-plugins#path:/packages/dsh-secret-redactor
 ```
 
 Restart `dsh web`. The redactor is active by default.

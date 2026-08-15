@@ -24,7 +24,7 @@ separate; omit scope for `global` memories.
 ## Install
 
 ```sh
-dsh plugin --profile web add link:~/dsh-plugins/packages/dsh-memories
+dsh plugin --profile web add github:DamonKoy/dsh-plugins#path:/packages/dsh-memories
 ```
 
 Restart `dsh web`.

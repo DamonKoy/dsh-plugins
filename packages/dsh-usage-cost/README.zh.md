@@ -28,7 +28,7 @@ DeepSeek Harness（DSH）的用量与成本统计插件，对标 Codex 0.144 的
 ## 安装
 
 ```sh
-dsh plugin --profile web add link:~/dsh-plugins/packages/dsh-usage-cost
+dsh plugin --profile web add github:DamonKoy/dsh-plugins#path:/packages/dsh-usage-cost
 ```
 
 重启 `dsh web` 后生效。默认开启，无配置即可记录用量。
