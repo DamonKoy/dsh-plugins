@@ -385,7 +385,14 @@ function createStdioTransport(config, hooks) {
       })
       childProcess.on('exit', (code, signal) => {
         const detail = signal ? `signal ${signal}` : `code ${code}`
-        if (spawned) settle(() => resolve())
+        if (spawned) {
+          settle(() => resolve())
+        } else {
+          // Exited before the 'spawn' event: the process never started
+          // (e.g. immediate exec failure). Resolve the start promise as a
+          // failure so connect() cannot hang on a dead transport.
+          settle(() => reject(new Error(`stdio process exited before spawning (${detail})`)))
+        }
         reportClose(new Error(`stdio process exited (${detail})`))
       })
       childProcess.stdout.on('end', () => {

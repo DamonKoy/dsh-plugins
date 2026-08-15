@@ -426,9 +426,15 @@ function startServer(ctx, serverConfig) {
 
   async function connect() {
     const myGeneration = ++generation
+    // Guards against double reconnect scheduling: the transport close hook
+    // and this attempt's catch may both observe the same failure.
+    let downHandled = false
     const mcp = new McpClient(serverConfig, {
       onClose: (error) => {
-        if (myGeneration === generation && !disposed) scheduleReconnect(error)
+        if (myGeneration === generation && !disposed) {
+          downHandled = true
+          scheduleReconnect(error)
+        }
       },
       onToolsChanged: () => {
         if (myGeneration === generation && !disposed) {
@@ -460,7 +466,7 @@ function startServer(ctx, serverConfig) {
       state.error = error && error.message ? error.message : String(error)
       console.warn(`${label}: connection attempt failed: ${state.error}`)
       await mcp.close().catch(() => {})
-      scheduleReconnect(error)
+      if (!downHandled) scheduleReconnect(error)
     }
   }
 
