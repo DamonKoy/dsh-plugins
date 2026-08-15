@@ -1,0 +1,7 @@
+# Pairing record for packages/dsh-usage-cost READMEs.
+# See docs/i18n.md in dsh-web-ui for the pairing contract.
+pair:
+  en: README.md
+  zh: README.zh.md
+  updatedAt: 2026-08-16
+  check: passing

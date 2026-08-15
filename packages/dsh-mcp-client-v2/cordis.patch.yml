@@ -1,0 +1,5 @@
+# dsh-mcp-client-v2 bundle patch: inserts the MCP client v2 plugin row.
+# Activate with `dsh plugin --profile web add link:~/dsh-plugins/packages/dsh-mcp-client-v2`
+- insert:
+    - id: mcp-client-v2
+      name: 'dsh-mcp-client-v2'

@@ -1,0 +1,43 @@
+{
+  "name": "dsh-mcp-client-v2",
+  "version": "0.2.0",
+  "description": "Enhanced MCP client for DeepSeek Harness: paginated tool discovery, non-blocking startup, and a mcp_tool_search model tool, with hand-rolled stdio / streamable-http transports and bounded exponential reconnect. · DSH MCP 客户端 v2：分页工具发现、非阻塞启动、工具搜索模型工具，自带 stdio / streamable-http 传输与指数退避重连。",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": {
+      "default": "./lib/index.js"
+    },
+    "./paginate": {
+      "default": "./lib/paginate.js"
+    },
+    "./mcp": {
+      "default": "./lib/mcp.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "check": "node --check lib/index.js && node --check lib/mcp.js && node --check lib/paginate.js",
+    "test": "node --test test/",
+    "selfcheck": "npm run check && npm run test"
+  },
+  "keywords": [
+    "deepseek",
+    "harness",
+    "dsh",
+    "dsh-plugin",
+    "mcp",
+    "model-context-protocol",
+    "tools",
+    "client"
+  ],
+  "license": "MIT",
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1"
+  }
+}
