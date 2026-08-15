@@ -1,0 +1,5 @@
+# dsh-memories bundle patch.
+# Activate with `dsh plugin --profile web add link:~/dsh-plugins/packages/dsh-memories`
+- insert:
+    - id: memories
+      name: 'dsh-memories'

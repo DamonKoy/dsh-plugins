@@ -1,0 +1,6 @@
+# Pairing record for packages/dsh-memories READMEs.
+pair:
+  en: README.md
+  zh: README.zh.md
+  updatedAt: 2026-08-16
+  check: passing

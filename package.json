@@ -1,0 +1,7 @@
+{
+  "name": "dsh-plugins",
+  "version": "0.1.0",
+  "private": true,
+  "description": "DSH enhancement plugin family: secret-redactor / approve-for-me / mcp-client-v2 / memories / system-proxy / usage-cost",
+  "type": "module"
+}

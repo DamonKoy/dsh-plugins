@@ -1,0 +1,5 @@
+# dsh-approve-for-me bundle patch.
+# Activate with `dsh plugin --profile web add link:~/dsh-plugins/packages/dsh-approve-for-me`
+- insert:
+    - id: approve-for-me
+      name: 'dsh-approve-for-me'

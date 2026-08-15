@@ -1,0 +1,33 @@
+{
+  "name": "dsh-memories",
+  "version": "0.1.0",
+  "description": "Project-scoped memory system for DeepSeek Harness: persistent key-value memories per scope with set/get/list/delete/search tools, JSON-file storage and client RPC. · DSH 项目记忆系统：按作用域持久化的键值记忆，含增删查列搜索工具与 RPC。",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": {
+      "default": "./lib/index.js"
+    },
+    "./store": {
+      "default": "./lib/store.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "keywords": [
+    "deepseek",
+    "harness",
+    "dsh",
+    "dsh-plugin",
+    "memory",
+    "persistence"
+  ],
+  "license": "MIT",
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1"
+  }
+}

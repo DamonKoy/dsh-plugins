@@ -1,0 +1,31 @@
+{
+  "name": "dsh-secret-redactor",
+  "version": "0.1.0",
+  "description": "Sensitive-information redaction for DeepSeek Harness: masks API keys, bearer tokens, JWTs, private keys and configured secrets in every tool result shown to the model, plus a redact_text tool and a redact RPC. · DSH 敏感信息脱敏插件：自动掩码工具输出中的 API key / token / 私钥 / 配置密钥。",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": {
+      "default": "./lib/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "keywords": [
+    "deepseek",
+    "harness",
+    "dsh",
+    "dsh-plugin",
+    "security",
+    "redaction",
+    "secret"
+  ],
+  "license": "MIT",
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1"
+  }
+}

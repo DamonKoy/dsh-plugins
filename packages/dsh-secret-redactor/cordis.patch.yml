@@ -1,0 +1,5 @@
+# dsh-secret-redactor bundle patch: inserts the redactor plugin row.
+# Activate with `dsh plugin --profile web add link:~/dsh-plugins/packages/dsh-secret-redactor`
+- insert:
+    - id: secret-redactor
+      name: 'dsh-secret-redactor'
